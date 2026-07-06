@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeForge — AI-Powered Resume & Cover Letter Builder</title>
+  <meta name="description"
+    content="Build HR-ready, ATS-optimized resumes and cover letters tailored to your target job. Upload your master resume and let AI craft the perfect application." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- jsPDF + html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+        </div>
+        <span class="brand-name">Resume<span class="brand-accent">Forge</span></span>
+      </div>
+      <div class="nav-steps" id="navSteps">
+        <div class="nav-step active" data-step="1">
+          <span class="step-num">1</span><span class="step-label">Upload</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="nav-step" data-step="2">
+          <span class="step-num">2</span><span class="step-label">Target</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="nav-step" data-step="3">
+          <span class="step-num">3</span><span class="step-label">Preview</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="nav-step" data-step="4">
+          <span class="step-num">4</span><span class="step-label">Export</span>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <button class="btn-ghost" id="startOverBtn" style="display:none">Start Over</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="heroSection">
+    <div class="hero-bg">
+      <div class="hero-orb orb-1"></div>
+      <div class="hero-orb orb-2"></div>
+      <div class="hero-orb orb-3"></div>
+      <div class="grid-lines"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        AI-Powered • HR-Focused • ATS-Optimized
+      </div>
+      <h1 class="hero-title">
+        Your Career,<br />
+        <span class="gradient-text">Perfectly Crafted</span>
+      </h1>
+      <p class="hero-sub">
+        Upload your master resume. Tell us the role. Get a tailored resume and
+        company-specific cover letter that gets you through the door.
+      </p>
+      <div class="hero-features">
+        <div class="feature-chip"><span class="chip-icon">⚡</span> Role-Specific Generation</div>
+        <div class="feature-chip"><span class="chip-icon">🎯</span> ATS Keyword Matching</div>
+        <div class="feature-chip"><span class="chip-icon">✉️</span> Custom Cover Letter</div>
+        <div class="feature-chip"><span class="chip-icon">📄</span> PDF Export</div>
+      </div>
+      <button class="btn-primary btn-hero" id="heroCtaBtn">
+        Build My Resume
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M5 12h14" />
+          <path d="m12 5 7 7-7 7" />
+        </svg>
+      </button>
+      <p class="hero-note">Free · No account required · Takes 3 minutes</p>
+    </div>
+    <div class="hero-preview-stack">
+      <div class="preview-card card-back"></div>
+      <div class="preview-card card-mid"></div>
+      <div class="preview-card card-front">
+        <div class="mini-resume">
+          <div class="mini-header">
+            <div class="mini-avatar"></div>
+            <div class="mini-info">
+              <div class="mini-name"></div>
+              <div class="mini-role"></div>
+            </div>
+          </div>
+          <div class="mini-section">
+            <div class="mini-line w-40"></div>
+            <div class="mini-line w-80"></div>
+            <div class="mini-line w-60"></div>
+          </div>
+          <div class="mini-section">
+            <div class="mini-line w-30"></div>
+            <div class="mini-line w-90"></div>
+            <div class="mini-line w-70"></div>
+            <div class="mini-line w-50"></div>
+          </div>
+          <div class="mini-skills">
+            <div class="mini-skill"></div>
+            <div class="mini-skill"></div>
+            <div class="mini-skill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MAIN APP ===== -->
+  <main class="app-main" id="appMain" style="display:none">
+
+    <!-- STEP 1: UPLOAD -->
+    <section class="step-section active" id="step1">
+      <div class="step-container">
+        <div class="step-header">
+          <div class="step-badge">Step 1 of 4</div>
+          <h2 class="step-title">Upload Your Master Resume</h2>
+          <p class="step-sub">We'll extract your experience, skills, and contact info automatically. Supports PDF files.
+          </p>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="resumeFile" accept=".pdf" hidden />
+          <div class="upload-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          </div>
+          <h3 class="upload-title">Drop your PDF resume here</h3>
+          <p class="upload-sub">or click to browse files</p>
+          <div class="upload-meta">PDF up to 10MB</div>
+        </div>
+
+        <div class="upload-progress" id="uploadProgress" style="display:none">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <p class="progress-text" id="progressText">Reading your resume...</p>
+        </div>
+
+        <div class="extracted-info" id="extractedInfo" style="display:none">
+          <div class="extracted-header">
+            <div class="extracted-success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Resume parsed successfully!
+            </div>
+          </div>
+          <div class="extracted-fields" id="extractedFields"></div>
+        </div>
+
+        <div class="skip-upload" id="skipUploadSection">
+          <div class="divider-or"><span>or</span></div>
+          <button class="btn-outline" id="skipUploadBtn">Fill in details manually</button>
+        </div>
+
+        <div class="step-nav">
+          <div></div>
+          <button class="btn-primary" id="step1Next" disabled>
+            Continue <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2: TARGET -->
+    <section class="step-section" id="step2">
+      <div class="step-container wide">
+        <div class="step-header">
+          <div class="step-badge">Step 2 of 4</div>
+          <h2 class="step-title">Tell Us About Your Target Role</h2>
+          <p class="step-sub">The more specific you are, the more tailored your resume and cover letter will be.</p>
+        </div>
+
+        <div class="form-grid">
+          <!-- Personal Info -->
+          <div class="form-card">
+            <h3 class="form-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M20 21a8 8 0 1 0-16 0" />
+              </svg>
+              Personal Information
+            </h3>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="fullName">Full Name *</label>
+                <input type="text" id="fullName" placeholder="Alex Johnson" />
+              </div>
+              <div class="form-group">
+                <label for="jobTitle">Current / Desired Title *</label>
+                <input type="text" id="jobTitle" placeholder="Senior Software Engineer" />
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" placeholder="alex@email.com" />
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" placeholder="+1 (555) 000-0000" />
+              </div>
+              <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" placeholder="San Francisco, CA" />
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="linkedin">LinkedIn URL</label>
+                <input type="url" id="linkedin" placeholder="linkedin.com/in/alexjohnson" />
+              </div>
+              <div class="form-group">
+                <label for="portfolio">Portfolio / GitHub</label>
+                <input type="url" id="portfolio" placeholder="github.com/alexjohnson" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Job -->
+          <div class="form-card">
+            <h3 class="form-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" />
+                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+              </svg>
+              Target Job Details
+            </h3>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="targetRole">Target Job Role *</label>
+                <input type="text" id="targetRole" placeholder="Product Manager, Data Scientist..." />
+              </div>
+              <div class="form-group">
+                <label for="targetCompany">Target Company</label>
+                <input type="text" id="targetCompany" placeholder="Google, Microsoft, Startup..." />
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="industry">Industry / Field *</label>
+                <select id="industry">
+                  <option value="">Select Industry...</option>
+                  <option value="tech">Technology & Software</option>
+                  <option value="data">Data Science & AI/ML</option>
+                  <option value="design">UI/UX & Design</option>
+                  <option value="marketing">Marketing & Growth</option>
+                  <option value="finance">Finance & Banking</option>
+                  <option value="healthcare">Healthcare & Medical</option>
+                  <option value="education">Education & Teaching</option>
+                  <option value="sales">Sales & Business Dev</option>
+                  <option value="hr">Human Resources</option>
+                  <option value="legal">Legal & Compliance</option>
+                  <option value="engineering">Mechanical / Civil Engineering</option>
+                  <option value="operations">Operations & Supply Chain</option>
+                  <option value="consulting">Consulting & Strategy</option>
+                  <option value="media">Media & Content Creation</option>
+                  <option value="retail">Retail & E-commerce</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="expLevel">Experience Level *</label>
+                <select id="expLevel">
+                  <option value="">Select Level...</option>
+                  <option value="fresher">Fresher / Entry Level (0-1 yr)</option>
+                  <option value="junior">Junior (1-3 yrs)</option>
+                  <option value="mid">Mid-Level (3-6 yrs)</option>
+                  <option value="senior">Senior (6-10 yrs)</option>
+                  <option value="lead">Lead / Staff (10+ yrs)</option>
+                  <option value="executive">Executive / C-Suite</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="tone">Resume Tone</label>
+                <select id="tone">
+                  <option value="professional">Professional</option>
+                  <option value="technical">Technical & Precise</option>
+                  <option value="creative">Creative & Bold</option>
+                  <option value="executive">Executive & Strategic</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="template">Resume Template</label>
+                <select id="template">
+                  <option value="modern">Modern (Two-Column)</option>
+                  <option value="executive">Executive (Sidebar)</option>
+                  <option value="classic">Classic (Single-Column)</option>
+                  <option value="minimal">Minimal (Clean)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Skills -->
+          <div class="form-card">
+            <h3 class="form-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              Skills & Expertise
+            </h3>
+            <div class="form-group">
+              <label for="skillInput">Add Skills (press Enter or comma)</label>
+              <div class="skill-input-wrap">
+                <input type="text" id="skillInput" placeholder="e.g. React, Python, Project Management..." />
+              </div>
+              <div class="skill-tags" id="skillTags"></div>
+            </div>
+          </div>
+
+          <!-- Experience -->
+          <div class="form-card">
+            <h3 class="form-card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Experience & Summary
+            </h3>
+            <div class="form-group">
+              <label for="experienceSummary">Your Experience Highlights</label>
+              <textarea id="experienceSummary" rows="4"
+                placeholder="Briefly describe your key experiences, achievements, projects, or past roles. Example: 5 years at TechCorp building scalable APIs. Led a team of 8 engineers. Reduced load time by 40%."></textarea>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="yearsExp">Years of Experience</label>
+                <input type="number" id="yearsExp" placeholder="5" min="0" max="50" />
+              </div>
+              <div class="form-group">
+                <label for="education">Highest Education</label>
+                <input type="text" id="education" placeholder="B.Tech Computer Science, MIT 2019" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="achievements">Top Achievements (optional)</label>
+              <textarea id="achievements" rows="3"
+                placeholder="• Increased revenue by $2M in Q3&#10;• Published 3 research papers&#10;• Built app with 100K+ users"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="jobDescription">Paste Job Description (optional — for better tailoring)</label>
+              <textarea id="jobDescription" rows="4"
+                placeholder="Paste the job description here for maximum keyword matching and ATS optimization..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn-outline" id="step2Back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M19 12H5" />
+              <path d="m12 19-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+          <button class="btn-primary" id="step2Next">
+            Generate Resume
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3: PREVIEW -->
+    <section class="step-section" id="step3">
+      <div class="preview-layout">
+        <!-- Controls Bar -->
+        <div class="preview-controls">
+          <div class="preview-tabs">
+            <button class="tab-btn active" id="tabResume" data-tab="resume">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              Resume
+            </button>
+            <button class="tab-btn" id="tabCover" data-tab="cover">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              Cover Letter
+            </button>
+          </div>
+          <div class="preview-actions">
+            <button class="btn-sm btn-outline" id="regenerateBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="1 4 1 10 7 10" />
+                <path d="M3.51 15a9 9 0 1 0 .49-3.6" />
+              </svg>
+              Regenerate
+            </button>
+            <button class="btn-sm btn-outline" id="editModeBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              Edit Mode
+            </button>
+            <button class="btn-sm btn-primary" id="downloadCurrentBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview Frame -->
+        <div class="preview-frame">
+          <div class="preview-paper" id="previewPaper">
+            <!-- Resume or Cover Letter rendered here -->
+          </div>
+        </div>
+
+        <!-- ATS Score Sidebar -->
+        <div class="ats-sidebar">
+          <div class="ats-card">
+            <h4 class="ats-title">ATS Score</h4>
+            <div class="ats-score-ring" id="atsScoreRing">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#1e293b" stroke-width="8" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="url(#scoreGrad)" stroke-width="8"
+                  stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="251" id="atsCircle"
+                  style="transform:rotate(-90deg);transform-origin:50% 50%" />
+                <defs>
+                  <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#6366f1" />
+                    <stop offset="100%" stop-color="#a855f7" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="ats-score-num" id="atsScoreNum">0</div>
+            </div>
+            <div class="ats-grade" id="atsGrade">Calculating...</div>
+          </div>
+
+          <div class="ats-keywords">
+            <h4 class="ats-title">Keyword Match</h4>
+            <div class="keyword-list" id="keywordList"></div>
+          </div>
+
+          <div class="ats-tips">
+            <h4 class="ats-title">HR Tips</h4>
+            <div class="tips-list" id="tipsList"></div>
+          </div>
+
+          <div class="sidebar-export-btns">
+            <button class="btn-primary btn-full" id="step3ExportBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Export Both PDFs
+            </button>
+            <button class="btn-outline btn-full" id="step3BackBtn">
+              ← Edit Details
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 4: EXPORT -->
+    <section class="step-section" id="step4">
+      <div class="step-container">
+        <div class="step-header">
+          <div class="success-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div class="step-badge">You're all set!</div>
+          <h2 class="step-title">Your Documents Are Ready</h2>
+          <p class="step-sub">Download your tailored resume and cover letter. Good luck with your application! 🚀</p>
+        </div>
+
+        <div class="export-cards">
+          <div class="export-card">
+            <div class="export-card-icon resume-icon">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </div>
+            <h3>Resume</h3>
+            <p>ATS-optimized, tailored to your target role</p>
+            <div class="export-meta" id="resumeExportMeta"></div>
+            <button class="btn-primary btn-full export-btn" id="downloadResumeBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download Resume PDF
+            </button>
+          </div>
+
+          <div class="export-card">
+            <div class="export-card-icon cover-icon">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            </div>
+            <h3>Cover Letter</h3>
+            <p>Personalized for <span id="coverTargetCompany">your target company</span></p>
+            <div class="export-meta" id="coverExportMeta"></div>
+            <button class="btn-primary btn-full export-btn" id="downloadCoverBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download Cover Letter PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="export-tips">
+          <h3 class="tips-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            Pro Tips for Getting Hired
+          </h3>
+          <div class="tips-grid">
+            <div class="tip-item">
+              <span class="tip-num">01</span>
+              <div>
+                <strong>Customize for each application</strong>
+                <p>Use the app again with a different job description for each company.</p>
+              </div>
+            </div>
+            <div class="tip-item">
+              <span class="tip-num">02</span>
+              <div>
+                <strong>Follow up after applying</strong>
+                <p>Send a LinkedIn message to the recruiter 48 hours after applying.</p>
+              </div>
+            </div>
+            <div class="tip-item">
+              <span class="tip-num">03</span>
+              <div>
+                <strong>Keep your PDF under 1MB</strong>
+                <p>Many ATS systems reject large PDFs. Our exports are optimized.</p>
+              </div>
+            </div>
+            <div class="tip-item">
+              <span class="tip-num">04</span>
+              <div>
+                <strong>Name your file properly</strong>
+                <p>Use format: <code>FirstName_LastName_Resume.pdf</code></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-nav center">
+          <button class="btn-outline" id="backToPreviewBtn">← Back to Preview</button>
+          <button class="btn-primary" id="newResumeBtn">
+            Build Another Resume
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" id="loadingOverlay" style="display:none">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <h3 class="loading-title" id="loadingTitle">Generating your resume...</h3>
+      <p class="loading-sub" id="loadingSub">Analyzing your skills and experience</p>
+      <div class="loading-steps" id="loadingSteps">
+        <div class="load-step" id="ls1">✦ Reading your experience</div>
+        <div class="load-step" id="ls2">✦ Matching keywords to role</div>
+        <div class="load-step" id="ls3">✦ Crafting your summary</div>
+        <div class="load-step" id="ls4">✦ Generating cover letter</div>
+        <div class="load-step" id="ls5">✦ Optimizing for ATS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Hidden render areas for PDF export -->
+  <div style="position:fixed; left:-9999px; top:0; width:794px;">
+    <div id="resumeRenderArea"></div>
+    <div id="coverRenderArea"></div>
+  </div>
+
+  <script src="parser.js"></script>
+  <script src="generator.js"></script>
+  <script src="templates.js"></script>
+  <script src="pdf-export.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
