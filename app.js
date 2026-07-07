@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initPreviewControls();
   initExport();
+  if (typeof InterviewModule !== 'undefined') {
+    InterviewModule.init();
+  }
   lucide.createIcons();
 });
 

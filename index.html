@@ -61,6 +61,10 @@
         <div class="nav-step" data-step="4">
           <span class="step-num">4</span><span class="step-label">Export</span>
         </div>
+        <div class="step-connector"></div>
+        <div class="nav-step" data-step="5">
+          <span class="step-num">5</span><span class="step-label">Interview</span>
+        </div>
       </div>
       <div class="nav-actions">
         <button class="btn-ghost" id="startOverBtn" style="display:none">Start Over</button>
@@ -568,6 +572,30 @@
           </div>
         </div>
 
+        <!-- INTERVIEW PROMO CARD -->
+        <div class="interview-promo-card">
+          <div class="promo-content">
+            <div class="promo-badge">
+              <span class="badge-dot"></span>
+              NEW • AI Interview Simulator
+            </div>
+            <h3 class="promo-title">Ready to Ace the Real Interview?</h3>
+            <p class="promo-sub">Prepare with mock questions customized directly from your resume and target role. Run a simulated Technical or HR round with real-time feedback!</p>
+            <button class="btn-primary" id="startInterviewPromoBtn">
+              Start Mock Interview
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+          <div class="promo-graphic">
+            <div class="graphic-circle">🎙️</div>
+            <div class="graphic-bubble text-1">Explain your work with React...</div>
+            <div class="graphic-bubble text-2">Why do you want to work here?</div>
+          </div>
+        </div>
+
         <div class="export-tips">
           <h3 class="tips-header">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -622,6 +650,182 @@
       </div>
     </section>
 
+    <!-- STEP 5: MOCK INTERVIEW -->
+    <section class="step-section" id="step5">
+      <div class="step-container wide">
+        <div class="step-header">
+          <div class="step-badge">Step 5 of 5</div>
+          <h2 class="step-title">AI Mock Interview Prep</h2>
+          <p class="step-sub">Practice industry-specific interview rounds tailored to your profile.</p>
+        </div>
+
+        <!-- Setup Screen: Choosing between Technical & HR -->
+        <div id="interviewSetup" class="interview-setup-grid">
+          <div class="interview-card select-card" id="startTechRoundBtn">
+            <div class="card-icon tech-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+            </div>
+            <h3>Technical Round</h3>
+            <p>Tailored coding, architecture, and technology-specific questions matching your skills.</p>
+            <ul class="card-features">
+              <li>📋 5 customized questions</li>
+              <li>⚡ Real-time critique & scoring</li>
+              <li>💡 Model answers tailored to you</li>
+            </ul>
+            <button class="btn-primary btn-full">Start Technical Interview</button>
+          </div>
+
+          <div class="interview-card select-card" id="startHrRoundBtn">
+            <div class="card-icon hr-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </div>
+            <h3>HR & Behavioral Round</h3>
+            <p>Situational and cultural fit questions aligned with your target company and experience level.</p>
+            <ul class="card-features">
+              <li>🧠 Behavioral scenario validation</li>
+              <li>📈 STAR method structure advice</li>
+              <li>🏢 Tailored to your target company</li>
+            </ul>
+            <button class="btn-primary btn-full">Start HR Interview</button>
+          </div>
+        </div>
+
+        <!-- Simulator Screen: Interactive Q&A -->
+        <div id="interviewSimulator" style="display:none">
+          <div class="simulator-layout">
+            
+            <!-- Left panel: Progress tracking -->
+            <div class="sim-sidebar">
+              <div class="sim-sidebar-card">
+                <h4 id="simRoundTitle">Technical Round</h4>
+                <div class="sim-progress-bar">
+                  <div class="sim-progress-fill" id="simProgressFill" style="width: 20%"></div>
+                </div>
+                <div class="sim-progress-text" id="simProgressText">Question 1 of 5</div>
+                
+                <div class="sim-timer">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span id="simTimerText">00:00</span>
+                </div>
+
+                <div class="sim-q-indicator-list" id="simQIndicatorList">
+                  <!-- Indicators rendered here -->
+                </div>
+              </div>
+              
+              <button class="btn-outline btn-full" id="quitInterviewBtn">
+                Quit Session
+              </button>
+            </div>
+
+            <!-- Main Panel: Chat & Input -->
+            <div class="sim-main">
+              <div class="sim-chat-container">
+                <!-- AI Question Bubble -->
+                <div class="chat-bubble ai-bubble">
+                  <div class="bubble-avatar">🤖</div>
+                  <div class="bubble-content">
+                    <div class="ai-name">Interviewer</div>
+                    <p class="chat-text" id="simQuestionText">Loading question...</p>
+                  </div>
+                </div>
+
+                <!-- User Answer Input -->
+                <div class="chat-bubble user-bubble-input" id="userAnswerInputContainer">
+                  <div class="bubble-avatar">👤</div>
+                  <div class="bubble-content">
+                    <div class="user-name">Your Response</div>
+                    <textarea id="simAnswerInput" rows="5" placeholder="Type your answer here... Be detailed. Try to use metrics and specific skills."></textarea>
+                    <div class="user-input-meta">
+                      <span id="simCharCount">0 characters (min 30 recommended)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AI Feedback Bubble (Hidden until answer submitted) -->
+                <div class="chat-bubble feedback-bubble" id="simFeedbackContainer" style="display:none">
+                  <div class="bubble-avatar">🎯</div>
+                  <div class="bubble-content">
+                    <div class="feedback-header">
+                      <span class="feedback-badge">Analysis & Feedback</span>
+                      <div class="feedback-score">
+                        Score: <strong id="simFeedbackScore">0/100</strong>
+                      </div>
+                    </div>
+                    <div class="feedback-text">
+                      <h5>Critique:</h5>
+                      <p id="simFeedbackCritique">Loading critique...</p>
+                    </div>
+                    <div class="model-answer-box">
+                      <h5>Model Answer:</h5>
+                      <p id="simFeedbackModelAnswer">Loading model answer...</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Simulator Controls -->
+              <div class="sim-controls">
+                <button class="btn-outline" id="skipQuestionBtn">Skip Question</button>
+                <button class="btn-primary" id="submitAnswerBtn" disabled>Submit Answer</button>
+                <button class="btn-primary" id="nextQuestionBtn" style="display:none">Next Question</button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Scorecard Screen: Final Results -->
+        <div id="interviewScorecard" style="display:none">
+          <div class="scorecard-container">
+            <div class="scorecard-header">
+              <div class="trophy-icon">🏆</div>
+              <h2>Interview Scorecard</h2>
+              <p id="scorecardSubtitle">You completed the Technical Round!</p>
+            </div>
+
+            <div class="scorecard-stats-grid">
+              <div class="stat-card">
+                <div class="stat-num" id="scAvgScore">0/100</div>
+                <div class="stat-label">Average Score</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-num" id="scTimeSpent">00:00</div>
+                <div class="stat-label">Total Time</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-num" id="scCompletion">100%</div>
+                <div class="stat-label">Completion</div>
+              </div>
+            </div>
+
+            <h3 class="scorecard-breakdown-title">Response Breakdown</h3>
+            <div class="scorecard-breakdown" id="scorecardBreakdownList">
+              <!-- Accordion elements will be rendered here -->
+            </div>
+
+            <div class="scorecard-actions">
+              <button class="btn-outline" id="scBackToSetupBtn">Back to Selection</button>
+              <button class="btn-primary" id="scFinishBtn">Finish & Export</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <!-- LOADING OVERLAY -->
@@ -653,6 +857,7 @@
   <script src="generator.js"></script>
   <script src="templates.js"></script>
   <script src="pdf-export.js"></script>
+  <script src="interview.js"></script>
   <script src="app.js"></script>
 </body>
 
