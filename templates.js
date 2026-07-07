@@ -7,6 +7,15 @@ const Templates = {
 
   // ─── Render Resume ───────────────────────────────────────────
   renderResume(data) {
+    if (!data) return '<div class="error-msg">No resume data found</div>';
+    
+    // Add default fallbacks for nested properties to prevent crash on incomplete objects
+    data.personal = data.personal || {};
+    data.skills = data.skills || [];
+    data.experiences = data.experiences || [];
+    data.education = data.education || [];
+    data.skillsGrouped = data.skillsGrouped || [];
+
     const tmpl = data.template || 'modern';
     switch (tmpl) {
       case 'executive': return this.renderExecutive(data);
@@ -344,13 +353,14 @@ const Templates = {
 
   // ─── COVER LETTER ────────────────────────────────────────────
   renderCoverLetter(cl) {
+    cl = cl || {};
     return `
       <div class="cover-letter">
         <div class="cl-accent"></div>
         <div class="cl-header">
           <div>
-            <div class="cl-name">${this._esc(cl.name)}</div>
-            <div class="cl-title">${this._esc(cl.title)}</div>
+            <div class="cl-name">${this._esc(cl.name || 'Your Name')}</div>
+            <div class="cl-title">${this._esc(cl.title || 'Professional')}</div>
           </div>
           <div class="cl-contact">
             ${cl.email    ? `${this._esc(cl.email)}<br/>` : ''}
@@ -359,28 +369,28 @@ const Templates = {
           </div>
         </div>
 
-        <div class="cl-date">${this._esc(cl.date)}</div>
+        <div class="cl-date">${this._esc(cl.date || new Date().toLocaleDateString())}</div>
 
         <div class="cl-recipient">
-          <div class="cl-recipient-name">${this._esc(cl.recipientTitle)}</div>
+          <div class="cl-recipient-name">${this._esc(cl.recipientTitle || 'Hiring Manager')}</div>
           <div class="cl-recipient-info">
-            ${this._esc(cl.recipientCompany)}<br/>
+            ${this._esc(cl.recipientCompany || 'Target Company')}<br/>
             Hiring & Recruitment Team
           </div>
         </div>
 
-        <div class="cl-subject">Subject: ${this._esc(cl.subject)}</div>
+        <div class="cl-subject">Subject: ${this._esc(cl.subject || 'Job Application')}</div>
 
         <div class="cl-body">
-          <p>Dear ${this._esc(cl.recipientTitle)},</p>
-          <p>${this._esc(cl.opening)}</p>
-          <p>${this._esc(cl.middle)}</p>
-          <p>${this._esc(cl.closing)}</p>
+          <p>Dear ${this._esc(cl.recipientTitle || 'Hiring Manager')},</p>
+          <p>${this._esc(cl.opening || 'I am writing to express my interest in the open position.')}</p>
+          <p>${this._esc(cl.middle || 'My skills and experience align closely with your requirements.')}</p>
+          <p>${this._esc(cl.closing || 'Thank you for your time and consideration.')}</p>
         </div>
 
         <div class="cl-signature">
           <div class="cl-sig-label">Warm regards,</div>
-          <div class="cl-sig-name">${this._esc(cl.signatureName)}</div>
+          <div class="cl-sig-name">${this._esc(cl.signatureName || cl.name || 'Candidate')}</div>
         </div>
       </div>
     `;

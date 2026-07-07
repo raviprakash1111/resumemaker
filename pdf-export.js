@@ -11,15 +11,23 @@ const PDFExporter = {
    * @param {string} filename - Output filename (without .pdf)
    */
   async exportElementAsPDF(element, filename) {
-    const { jsPDF } = window.jspdf;
+    if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+      console.error('[PDF Export] jsPDF or html2canvas libraries not loaded in window scope.');
+      if (typeof showToast === 'function') {
+        showToast('PDF export libraries are not fully loaded. Please refresh or check connection.', 'error');
+      }
+      throw new Error('PDF Export libraries missing');
+    }
 
-    // Show progress
+    const { jsPDF } = window.jspdf;
     this._setStatus('Rendering to canvas...');
 
+    let originalDisplay = '';
+    let originalPosition = '';
+    
     try {
-      // Temporarily make element visible for rendering
-      const originalDisplay = element.style.display;
-      const originalPosition = element.style.position;
+      originalDisplay = element.style.display;
+      originalPosition = element.style.position;
       element.style.display = 'block';
 
       const canvas = await html2canvas(element, {
@@ -32,6 +40,7 @@ const PDFExporter = {
         windowWidth: 794
       });
 
+      // Restore style early before PDF file generation
       element.style.display = originalDisplay;
       element.style.position = originalPosition;
 
@@ -76,6 +85,12 @@ const PDFExporter = {
       console.error('PDF export error:', err);
       this._setStatus('');
       throw err;
+    } finally {
+      // Ensure visibility styles are clean even if render breaks
+      if (element) {
+        if (originalDisplay) element.style.display = originalDisplay;
+        if (originalPosition) element.style.position = originalPosition;
+      }
     }
   },
 

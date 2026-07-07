@@ -3,6 +3,8 @@
  * Handles state, interactive simulator, timer, critique engine, and scorecard.
  */
 
+var API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+
 const InterviewModule = {
   // ─── State ──────────────────────────────────────────────────
   state: {
@@ -27,47 +29,47 @@ const InterviewModule = {
     const promoBtn = $('startInterviewPromoBtn');
     if (promoBtn) {
       promoBtn.addEventListener('click', () => {
-        // Go to Step 5
-        if (typeof goToStep === 'function') {
-          goToStep(5);
-        }
+        if (typeof goToStep === 'function') goToStep(5);
       });
     }
 
-    // Round selectors
-    $('startTechRoundBtn').addEventListener('click', () => this.startRound('technical'));
-    $('startHrRoundBtn').addEventListener('click', () => this.startRound('hr'));
+    // Round selectors — guard in case step 5 isn't in DOM yet
+    const techBtn = $('startTechRoundBtn');
+    const hrBtn   = $('startHrRoundBtn');
+    if (techBtn) techBtn.addEventListener('click', () => this.startRound('technical'));
+    if (hrBtn)   hrBtn.addEventListener('click',   () => this.startRound('hr'));
 
     // Textarea input event for char count & enable button
     const textInput = $('simAnswerInput');
-    textInput.addEventListener('input', () => {
-      const len = textInput.value.trim().length;
-      $('simCharCount').textContent = `${len} characters (min 30 recommended)`;
-      
-      const submitBtn = $('submitAnswerBtn');
-      if (len >= 5) {
-        submitBtn.disabled = false;
-      } else {
-        submitBtn.disabled = true;
-      }
-    });
+    if (textInput) {
+      textInput.addEventListener('input', () => {
+        const len = textInput.value.trim().length;
+        const countEl = $('simCharCount');
+        if (countEl) countEl.textContent = `${len} characters (min 30 recommended)`;
+        const submitBtn = $('submitAnswerBtn');
+        if (submitBtn) submitBtn.disabled = len < 5;
+      });
+    }
 
     // Control buttons
-    $('submitAnswerBtn').addEventListener('click', () => this.submitAnswer());
-    $('nextQuestionBtn').addEventListener('click', () => this.nextQuestion());
-    $('skipQuestionBtn').addEventListener('click', () => this.skipQuestion());
-    $('quitInterviewBtn').addEventListener('click', () => {
+    const submitBtn    = $('submitAnswerBtn');
+    const nextBtn      = $('nextQuestionBtn');
+    const skipBtn      = $('skipQuestionBtn');
+    const quitBtn      = $('quitInterviewBtn');
+    const backSetupBtn = $('scBackToSetupBtn');
+    const finishBtn    = $('scFinishBtn');
+
+    if (submitBtn)    submitBtn.addEventListener('click',    () => this.submitAnswer());
+    if (nextBtn)      nextBtn.addEventListener('click',      () => this.nextQuestion());
+    if (skipBtn)      skipBtn.addEventListener('click',      () => this.skipQuestion());
+    if (quitBtn)      quitBtn.addEventListener('click',      () => {
       if (confirm('Are you sure you want to quit? Your progress in this round will be lost.')) {
         this.resetToSetup();
       }
     });
-
-    // Scorecard buttons
-    $('scBackToSetupBtn').addEventListener('click', () => this.resetToSetup());
-    $('scFinishBtn').addEventListener('click', () => {
-      if (typeof goToStep === 'function') {
-        goToStep(4); // Back to export
-      }
+    if (backSetupBtn) backSetupBtn.addEventListener('click', () => this.resetToSetup());
+    if (finishBtn)    finishBtn.addEventListener('click',    () => {
+      if (typeof goToStep === 'function') goToStep(4);
     });
   },
 
@@ -125,9 +127,8 @@ const InterviewModule = {
   generateQuestions(type, data) {
     const role = data.targetRole || 'Professional';
     const company = data.company || 'our company';
-    const industry = data.template || 'tech'; 
+    const industry = data.industry || 'tech'; 
     const skills = data.skills || [];
-    const name = data.personal.name || 'Candidate';
     const yearsExp = data.yearsExp || '3';
 
     if (type === 'hr') {
@@ -165,50 +166,220 @@ const InterviewModule = {
       ];
     } else {
       // TECHNICAL QUESTIONS
-      // 1. General domain intro
-      // 2 & 3. Skill-specific questions based on user's actual skills list
-      // 4. System architecture or workflow design
-      // 5. Critical troubleshooting scenario
+      const skill1 = skills[0] || 'core methodologies';
+      const skill2 = skills[1] || 'domain tools';
+      const skill3 = skills[2] || 'best practices';
 
-      // Extract actual skills or fallback
-      const skill1 = skills[0] || 'your core technologies';
-      const skill2 = skills[1] || 'modern frameworks';
-      const skill3 = skills[2] || 'system architecture';
+      const templates = {
+        tech: [
+          {
+            question: `Explain your technical stack and how you select the appropriate technologies for a new project. How does your experience with ${skill1} factor into this?`,
+            modelAnswer: `My primary technical stack is designed around reliability and scale. I select technologies based on project constraints, team expertise, and performance needs. For instance, I choose ${skill1} when project demands require fast cycles and robust tooling. I evaluate factors like ecosystem support, community maturity, and performance benchmarks before committing to an architecture.`,
+            keywords: [skill1.toLowerCase(), 'architecture', 'performance', 'reliability'],
+            category: 'Tech Stack'
+          },
+          {
+            question: `Can you describe a deep technical challenge you faced while implementing a solution involving ${skill1}? How did you diagnose and overcome it?`,
+            modelAnswer: `While working with ${skill1}, we encountered a major bottleneck where resource utilization spiked during high-concurrency loads. I diagnosed the issue by setting up detailed logging and analyzing profiles. The root cause was inefficient database queries. I optimized this by refactoring parameters and implementing caching layers, reducing response times by 40% and stabilizing CPU load.`,
+            keywords: [skill1.toLowerCase(), 'bottleneck', 'diagnosed', 'optimized', 'refactoring'],
+            category: 'Tech Challenge'
+          },
+          {
+            question: `What are the best practices for writing clean, maintainable code in ${skill2}? How do you ensure high standards in team environments?`,
+            modelAnswer: `For ${skill2}, best practices include strict adherence to design patterns, modular architecture, and solid linting rules. I advocate for extensive unit test coverage (targeting 80%+) and perform thorough code reviews that focus on code readability, performance, and security. I also believe in keeping technical documentation updated.`,
+            keywords: [skill2.toLowerCase(), 'modular', 'test coverage', 'code review', 'maintainable'],
+            category: 'Code Quality'
+          },
+          {
+            question: `How do you design a scalable system or workflow that can handle high volume/load without failing? What design patterns do you employ?`,
+            modelAnswer: `To scale systems, I use a microservices approach or modular design to decouple components. I implement load balancing, horizontal scaling, and messaging queues to handle heavy bursts. Caching layers are placed in front of databases to mitigate heavy read traffic. I also follow defensive design patterns like circuit breakers and retry loops.`,
+            keywords: ['decouple', 'scaling', 'caching', 'microservices', 'circuit breakers'],
+            category: 'System Design'
+          },
+          {
+            question: `Describe a production emergency or severe system failure you resolved. What was your triage process, and how did you prevent it from recurring?`,
+            modelAnswer: `We had an incident where the primary production system became unresponsive due to database pool exhaustion. My immediate triage was to isolate the traffic, capture stack traces, and spin up read replicas to distribute the load. Once services stabilized, I conducted a post-mortem: we added connection timeout limits, optimized database pooling configuration, and set up real-time monitoring.`,
+            keywords: ['triage', 'incident', 'monitoring', 'pooling', 'post-mortem'],
+            category: 'Troubleshooting'
+          }
+        ],
+        data: [
+          {
+            question: `Explain your typical workflow for data preprocessing and cleaning before modeling. How do you handle missing values or outliers using ${skill1}?`,
+            modelAnswer: `My data preprocessing pipeline starts with exploratory data analysis to identify distributions. Using ${skill1}, I handle missing values depending on their mechanism: imputation for MCAR data or introducing indicator flags for MNAR. For outliers, I use robust statistical scaling or trimming based on IQR thresholds, ensuring clean datasets without introducing artificial bias.`,
+            keywords: [skill1.toLowerCase(), 'preprocessing', 'outliers', 'imputation', 'eda'],
+            category: 'Data Prep'
+          },
+          {
+            question: `Describe a scenario where you had to choose between different ML algorithms for a problem. How did your experience with ${skill2} help guide this decision?`,
+            modelAnswer: `Faced with a classification problem under limited computational resources, I compared simple logistic regression with complex ensemble methods using ${skill2}. I evaluated precision, recall, and computational latency. While tree-based methods gave 3% higher accuracy, the deployment latency was too high, leading me to choose a pruned decision tree to satisfy real-time constraints.`,
+            keywords: [skill2.toLowerCase(), 'classification', 'ensemble', 'precision', 'latency'],
+            category: 'Model Selection'
+          },
+          {
+            question: `How do you identify and mitigate model drift or statistical bias in production data pipelines?`,
+            modelAnswer: `I mitigate model drift by establishing continuous monitoring pipelines that compare incoming feature distributions against training baseline datasets using metrics like PSI (Population Stability Index). To handle bias, I analyze demographic parity and implement periodic model retraining pipelines with updated representative datasets.`,
+            keywords: ['drift', 'monitoring', 'bias', 'retraining', 'distributions'],
+            category: 'MLOps & Bias'
+          },
+          {
+            question: `Explain your process for building and optimizing complex SQL queries or ETL pipelines when working with large datasets.`,
+            modelAnswer: `To optimize ETL pipelines, I perform schema optimization, partitioning, and indexing on target databases. I design modular, incremental ETL flows rather than full table scans. In SQL queries, I avoid nested subqueries, leverage CTEs for readability, and analyze execution plans to identify and fix bottle-necked joins.`,
+            keywords: ['etl', 'indexing', 'partitioning', 'cte', 'execution plan'],
+            category: 'Data Engineering'
+          },
+          {
+            question: `Describe a time when your analytical insights directly drove a business decision. How did you communicate the results using ${skill3}?`,
+            modelAnswer: `I conducted cohort analysis on customer churn, identifying that 20% of users dropped off during onboarding. Utilizing ${skill3}, I designed interactive dashboards that communicated the drop-off metrics to product stakeholders. This led to a simplified onboarding flow, resulting in a 12% increase in customer activation rates.`,
+            keywords: [skill3.toLowerCase(), 'analytics', 'churn', 'dashboards', 'activation'],
+            category: 'Business Value'
+          }
+        ],
+        design: [
+          {
+            question: `How do you start your user research phase for a new product? What techniques do you use to synthesize user feedback?`,
+            modelAnswer: `My research starts with defining goals, user personas, and target demographics. I conduct qualitative interviews, surveys, and context mapping. To synthesize findings, I create empathy maps and affinity diagrams, grouping observations into key thematic insights that directly inform the system requirements and user journeys.`,
+            keywords: ['personas', 'interviews', 'empathy', 'affinity', 'insights'],
+            category: 'User Research'
+          },
+          {
+            question: `Describe your workflow for creating and scaling a responsive design system. How do you ensure consistency using ${skill1}?`,
+            modelAnswer: `I design modular components based on atomic design principles. Using ${skill1}, I define design tokens for typography, spacing, and colors. I build reusable UI components (buttons, input groups) with auto-layouts and responsive breakpoints, publishing them to a shared library to maintain absolute brand consistency across projects.`,
+            keywords: [skill1.toLowerCase(), 'modular', 'design tokens', 'atomic', 'breakpoints'],
+            category: 'Design Systems'
+          },
+          {
+            question: `How do you ensure WCAG accessibility (a11y) compliance in your UI designs? What specific rules do you test for?`,
+            modelAnswer: `I ensure accessibility compliance by testing color contrast ratios (targeting AA or AAA compliance), defining clear focus states, and designing clear heading hierarchies. I also ensure target touch sizes are at least 48x48px and verify layout compatibility with screen readers through tab orders.`,
+            keywords: ['contrast', 'focus states', 'touch sizes', 'accessibility', 'wcag'],
+            category: 'Accessibility'
+          },
+          {
+            question: `Describe your usability testing process. How do you handle cases where user testing results contradict your initial design hypotheses?`,
+            modelAnswer: `I organize moderated usability tests with 5-8 users, assigning tasks and observing friction points. If testing results contradict my hypotheses, I look at the qualitative feedback objectively. I prioritize the user behavior data over my initial assumptions and iterate on the wireframes to remove the identified user blockages.`,
+            keywords: ['moderated', 'friction', 'behavior', 'iterate', 'wireframes'],
+            category: 'Usability Testing'
+          },
+          {
+            question: `How do you collaborate with engineering teams to ensure designs are implemented with high fidelity? How does ${skill2} help with handoff?`,
+            modelAnswer: `I initiate handoff by conducting walk-through sessions with developers. Using ${skill2}, I provide interactive prototypes, detailed design specifications, and exported assets. I maintain open communication lines during construction and perform visual QA audits on test environments before release.`,
+            keywords: [skill2.toLowerCase(), 'handoff', 'specifications', 'assets', 'visual qa'],
+            category: 'Dev Handoff'
+          }
+        ],
+        marketing: [
+          {
+            question: `How do you plan a campaigns parameters across multi-channel digital marketing? What metrics do you look at to assess target audience fit?`,
+            modelAnswer: `I plan campaigns by defining KPIs, customer personas, and channel selections. I review initial metrics like CTR (Click-Through Rate), CPM, and cost per lead to assess audience fit. I continuously perform audience splits and demographic testing to identify high-converting segments.`,
+            keywords: ['kpis', 'ctr', 'personas', 'splits', 'demographic'],
+            category: 'Campaign Planning'
+          },
+          {
+            question: `Describe your methodology for optimizing CAC (Customer Acquisition Cost) and ROAS (Return on Ad Spend) using ${skill1}.`,
+            modelAnswer: `To optimize ROAS, I analyze campaign funnels using ${skill1}. I identify and cut low-performing keywords or ad sets, allocate budgets to high-converting cohorts, and deploy custom retargeting lists. I also implement landing page improvements to boost conversion rates, directly lowering the overall CAC.`,
+            keywords: [skill1.toLowerCase(), 'roas', 'cohorts', 'retargeting', 'cac'],
+            category: 'Performance Mktg'
+          },
+          {
+            question: `How do you plan and execute an SEO keyword strategy? What tools or parameters do you prioritize?`,
+            modelAnswer: `My SEO strategy centers around keyword intent, search volume, and ranking difficulty. I target long-tail keywords with clear user intent and build content pillars around them. I prioritize technical SEO configurations (page speed, mobile friendliness) and track rankings using domain authority metrics.`,
+            keywords: ['intent', 'pillars', 'long-tail', 'rankings', 'authority'],
+            category: 'SEO Strategy'
+          },
+          {
+            question: `Explain how you structure an A/B split test for ad creatives or email campaigns. How do you verify statistical significance?`,
+            modelAnswer: `I design split tests by modifying a single variable (e.g. subject line or CTA) and keeping all other configurations identical. I split traffic evenly among randomly selected target groups. To determine significance, I collect a minimum sample size and use chi-square or t-test calculators on conversion metrics.`,
+            keywords: ['variable', 'split', 'sample size', 'significance', 'conversion'],
+            category: 'A/B Testing'
+          },
+          {
+            question: `How do you leverage marketing automation tools like ${skill2} to build customer engagement funnels?`,
+            modelAnswer: `I use ${skill2} to structure automated customer journeys based on user behaviors (e.g., cart abandonment, welcome series). I define trigger actions, apply dynamic segmentation, and build email cadences with personalized content to nurture prospects and drive repeat conversions.`,
+            keywords: [skill2.toLowerCase(), 'funnel', 'journeys', 'segmentation', 'personalized'],
+            category: 'Automation'
+          }
+        ],
+        finance: [
+          {
+            question: `Explain your process for building a comprehensive financial forecasting model. How do you account for volatility or market assumptions?`,
+            modelAnswer: `I construct forecasting models by building historical baselines and mapping operational drivers. I formulate base, optimistic, and conservative scenarios to account for volatility. I parameterize key market assumptions (like inflation or pricing shifts) so that variables can be updated dynamically.`,
+            keywords: ['forecasting', 'baselines', 'scenarios', 'assumptions', 'volatility'],
+            category: 'Forecasting'
+          },
+          {
+            question: `How do you perform risk assessment and quantitative modeling for investment portfolios? How does ${skill1} assist in this?`,
+            modelAnswer: `I evaluate portfolio risk by calculating metrics like Volatility, beta, and Sharpe ratios. Using ${skill1}, I model historical distributions and run sensitivity analyses. This allows me to optimize asset weights and recommend hedging strategies that align risk parameters with target returns.`,
+            keywords: [skill1.toLowerCase(), 'volatility', 'sharpe', 'sensitivity', 'hedging'],
+            category: 'Risk Management'
+          },
+          {
+            question: `What is your approach to structuring corporate valuations? Contrast DCF with comparable company analysis.`,
+            modelAnswer: `For valuations, I build DCF models to determine intrinsic value based on projected free cash flows discounted by the WACC. I cross-reference this with comparable company analysis (trading multiples like EV/EBITDA) to verify findings against current market valuations.`,
+            keywords: ['valuation', 'dcf', 'wacc', 'multiples', 'intrinsic'],
+            category: 'Valuations'
+          },
+          {
+            question: `How do you ensure compliance with financial regulations (like GAAP or IFRS) when preparing audits or reporting summaries?`,
+            modelAnswer: `I ensure regulatory compliance by keeping audit checklists updated and performing reconciliation protocols on general ledgers. I enforce clear internal controls, separation of duties, and document accounting treatment selections to satisfy disclosure requirements.`,
+            keywords: ['compliance', 'audit', 'reconciliation', 'ledger', 'disclosure'],
+            category: 'Audit & GAAP'
+          },
+          {
+            question: `Describe a scenario where you identified a cost-saving or revenue-driving opportunity through financial analysis using ${skill2}.`,
+            modelAnswer: `I conducted a detailed operating variance analysis using ${skill2} and noticed overhead expenses in supply lines were growing faster than sales. I renegotiated vendor terms and streamlined inventory levels, resulting in $120K in annualized cost savings.`,
+            keywords: [skill2.toLowerCase(), 'variance', 'overhead', 'inventory', 'savings'],
+            category: 'Corporate Finance'
+          }
+        ],
+        generic: [
+          {
+            question: `How do you establish project goals and prioritize deliverables when working with cross-functional teams? How does your experience with ${skill1} factor into this?`,
+            modelAnswer: `I establish goals by defining project requirements and aligning stakeholders. Using ${skill1}, I break deliverables down into modular phases and assign priorities based on capacity and business impact. I run weekly checkpoints to monitor progress and adjust resource allocations as needed.`,
+            keywords: [skill1.toLowerCase(), 'deliverables', 'priorities', 'cross-functional', 'stakeholders'],
+            category: 'Project Control'
+          },
+          {
+            question: `Can you describe a challenging project bottleneck or workflow inefficiency you resolved? What was your approach using ${skill2}?`,
+            modelAnswer: `In my previous role, we faced bottleneck issues in reporting cycles due to manual processing steps. Utilizing ${skill2}, I designed and automated reporting templates and unified data imports. This eliminated manual data entries, reducing delivery times by 40% and freeing up team bandwidth.`,
+            keywords: [skill2.toLowerCase(), 'bottleneck', 'automated', 'efficiency', 'reporting'],
+            category: 'Process Opt'
+          },
+          {
+            question: `How do you handle scope creep or shifting project priorities under tight deadlines?`,
+            modelAnswer: `I manage scope changes by conducting change impact assessments. I present the estimated resource cost to key stakeholders, prompting them to prioritize new additions or extend timelines. This maintains expectations and protects team velocity.`,
+            keywords: ['scope creep', 'stakeholders', 'impact', 'priorities', 'expectations'],
+            category: 'Scope Control'
+          },
+          {
+            question: `How do you measure project success? What qualitative or quantitative KPIs do you establish?`,
+            modelAnswer: `I define success using KPIs like project milestones, delivery variance, and customer satisfaction scores. I set up real-time performance indicators to track quality metrics and conduct post-mortems to ensure continuous improvements.`,
+            keywords: ['kpis', 'milestones', 'variance', 'quality', 'post-mortem'],
+            category: 'Project KPIs'
+          },
+          {
+            question: `Describe a situation where you had to persuade stakeholders or team members to adopt a new methodology or workflow.`,
+            modelAnswer: `To implement a new workflow, I built a small case study showing the potential efficiency gains. I hosted a brief training workshop, address team questions, and phased the transition. This resulted in an immediate 15% improvement in delivery speed.`,
+            keywords: ['stakeholders', 'methodology', 'workflow', 'efficiency', 'transition'],
+            category: 'Stakeholders'
+          }
+        ]
+      };
 
-      const techQuestions = [
-        {
-          question: `Explain your technical stack and how you select the appropriate technologies for a new project. How does your experience with ${skill1} factor into this?`,
-          modelAnswer: `My primary technical stack is designed around reliability and scale. I select technologies based on project constraints, team expertise, and performance needs. For instance, I choose ${skill1} when project demands require fast cycles and robust tooling. I evaluate factors like ecosystem support, community maturity, and performance benchmarks before committing to an architecture, ensuring the technology will scale alongside business requirements.`,
-          keywords: [skill1.toLowerCase(), 'architecture', 'performance', 'reliability', 'benchmarks'],
-          category: 'Tech Stack Selection'
-        },
-        {
-          question: `Can you describe a deep technical challenge you faced while implementing a solution involving ${skill1}? How did you diagnose and overcome it?`,
-          modelAnswer: `While working with ${skill1}, we encountered a major bottlenecks where resource utilization spiked during high-concurrency loads. I diagnosed the issue by setting up detailed logging and analyzing process profiles. The root cause was inefficient data handling and redundant calls. I optimized this by refactoring the core queries, caching static requests, and implementing asynchronous loading. This reduced processing times by 40% and stabilized CPU utilization.`,
-          keywords: [skill1.toLowerCase(), 'bottleneck', 'diagnosed', 'optimized', 'refactoring'],
-          category: 'Technical Problem Solving'
-        },
-        {
-          question: `What are the best practices for writing clean, maintainable code in ${skill2}? How do you ensure high standards in team environments?`,
-          modelAnswer: `For ${skill2}, best practices include strict adherence to design patterns, modular architecture, and solid linting rules. I advocate for extensive unit test coverage (targeting 80%+) and perform thorough code reviews that focus on code readability, performance, and security. I also believe in keeping technical documentation updated so that onboarding new engineers is seamless and clean practices are shared.`,
-          keywords: [skill2.toLowerCase(), 'modular', 'test coverage', 'code review', 'maintainable'],
-          category: 'Code Quality'
-        },
-        {
-          question: `How do you design a scalable system or workflow that can handle high volume/load without failing? What design patterns do you employ?`,
-          modelAnswer: `To scale systems, I use a microservices approach or modular design to decouple components. I implement load balancing, horizontal scaling, and messaging queues (like RabbitMQ) to handle heavy bursts. Caching layers are placed in front of databases to mitigate heavy read traffic. I also follow defensive design patterns like circuit breakers and retry loops to gracefully handle microservice failures and maintain service availability.`,
-          keywords: ['decouple', 'scaling', 'caching', 'microservices', 'circuit breakers'],
-          category: 'System Design'
-        },
-        {
-          question: `Describe a production emergency or severe system failure you resolved. What was your triage process, and how did you prevent it from recurring?`,
-          modelAnswer: `We had an incident where the primary production system became unresponsive due to an database pool exhaustion. My immediate triage was to isolate the traffic, capture stack traces, and spin up read replicas to distribute the load. Once services stabilized, I conducted a post-mortem: we added connection timeout limits, optimized database pooling configuration, and set up real-time Prometheus monitoring. We also established automated alerts to notify the team before connections breach 80% capacity.`,
-          keywords: ['triage', 'incident', 'monitoring', 'pooling', 'post-mortem'],
-          category: 'Troubleshooting & SRE'
-        }
-      ];
+      // Map industry code to matching template category
+      let categoryQuestions = templates.generic;
+      if (['tech', 'engineering', 'operations'].includes(industry)) {
+        categoryQuestions = templates.tech;
+      } else if (['data'].includes(industry)) {
+        categoryQuestions = templates.data;
+      } else if (['design'].includes(industry)) {
+        categoryQuestions = templates.design;
+      } else if (['marketing', 'sales'].includes(industry)) {
+        categoryQuestions = templates.marketing;
+      } else if (['finance', 'consulting', 'legal', 'hr'].includes(industry)) {
+        categoryQuestions = templates.finance;
+      }
 
-      return techQuestions;
+      return categoryQuestions;
     }
   },
 
@@ -421,6 +592,26 @@ const InterviewModule = {
     // Render Breakdown
     this.renderScorecardBreakdown();
 
+    // Save to Database
+    const questions_data = this.state.questions.map((q, idx) => ({
+      category: q.category,
+      question: q.question,
+      answer: this.state.answers[idx],
+      score: this.state.scores[idx],
+      critique: this.state.critiques[idx],
+      modelAnswer: q.modelAnswer
+    }));
+
+    this.saveInterviewScorecard({
+      type: this.state.type,
+      role: AppState.generatedData?.targetRole || 'Professional',
+      company: AppState.generatedData?.company || 'our company',
+      avg_score: avgScore,
+      time_spent: timeStr,
+      completion: `${Math.round((answeredCount / totalQuestions) * 100)}%`,
+      questions_data
+    });
+
     // Transition view
     $('interviewSimulator').style.display = 'none';
     $('interviewSetup').style.display = 'none';
@@ -468,6 +659,24 @@ const InterviewModule = {
         </div>
       `;
     }).join('');
+  },
+
+  async saveInterviewScorecard(data) {
+    try {
+      const res = await fetch(`${API_BASE}/api/interviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        console.log('Mock interview scorecard saved to database');
+        if (typeof fetchDashboardData === 'function') {
+          fetchDashboardData();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save mock interview scorecard:', err);
+    }
   },
 
   // ─── RESET TO SETUP ──────────────────────────────────────────

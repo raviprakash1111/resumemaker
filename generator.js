@@ -178,7 +178,9 @@ const Generator = {
       template: formData.template || 'modern',
       tone: formData.tone || 'professional',
       targetRole,
-      company
+      company,
+      industry: formData.industry || 'tech',
+      expLevel: formData.expLevel || 'mid'
     };
   },
 

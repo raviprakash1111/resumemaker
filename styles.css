@@ -1354,3 +1354,255 @@ code { background: rgba(99,102,241,0.15); padding: 1px 6px; border-radius: 4px; 
   .scorecard-stats-grid { grid-template-columns: 1fr; }
 }
 
+/* ============================
+   HISTORY DASHBOARD & SIDEBAR
+   ============================ */
+.dashboard-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 460px;
+  height: 100vh;
+  background: rgba(13, 18, 36, 0.95);
+  backdrop-filter: blur(24px);
+  border-left: 1px solid var(--border);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dashboard-sidebar.active {
+  transform: translateX(0);
+}
+
+.dashboard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  display: none;
+}
+.dashboard-overlay.active {
+  display: block;
+}
+
+.db-sidebar-header {
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.db-sidebar-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.db-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+.db-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+  border-bottom: 2px solid transparent;
+}
+.db-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.02);
+}
+.db-tab.active {
+  color: var(--accent-light);
+  border-bottom-color: var(--accent);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.db-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.db-list-section {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  overflow-y: auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.db-list-section.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.db-list-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.db-empty-msg {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  padding: 48px 24px;
+  line-height: 1.6;
+}
+
+/* History Cards */
+.db-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.db-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+.db-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.db-card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.db-card-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.db-card-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-light);
+  flex-shrink: 0;
+}
+.db-card-badge.high-score {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--green);
+}
+.db-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+.db-card-date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.db-card-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-db-action {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+}
+.btn-db-load {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--accent-light);
+}
+.btn-db-load:hover {
+  background: var(--accent);
+  color: white;
+}
+.btn-db-delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--red);
+  font-size: 1rem;
+  padding: 4px 8px;
+}
+.btn-db-delete:hover {
+  background: var(--red);
+  color: white;
+}
+
+/* Modal Styling */
+.db-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 760px;
+  max-height: 85vh;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  z-index: 1002;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.db-modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.db-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.db-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.db-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 1001;
+}
+
+@media (max-width: 500px) {
+  .dashboard-sidebar {
+    width: 100%;
+  }
+}
+
+

@@ -3,6 +3,8 @@
  * Manages state, navigation, event handlers, and orchestrates all modules.
  */
 
+var API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+
 // ─── App State ────────────────────────────────────────────────
 const AppState = {
   currentStep: 1,
@@ -27,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof InterviewModule !== 'undefined') {
     InterviewModule.init();
   }
+  initDashboard();
   lucide.createIcons();
 });
 
@@ -173,10 +176,17 @@ function initSkillInput() {
   const input = $('skillInput');
 
   input.addEventListener('keydown', e => {
+    // Add skill on Enter or comma
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       const val = input.value.replace(',', '').trim();
       if (val) { addSkill(val); input.value = ''; }
+      return;
+    }
+    // Remove last skill on Backspace when input is empty
+    if (e.key === 'Backspace' && !input.value && AppState.skills.length > 0) {
+      AppState.skills.pop();
+      renderSkillTags();
     }
   });
 
@@ -188,14 +198,6 @@ function initSkillInput() {
         input.value = '';
       }
     }, 10);
-  });
-
-  // Allow backspace to remove last tag
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Backspace' && !input.value && AppState.skills.length > 0) {
-      AppState.skills.pop();
-      renderSkillTags();
-    }
   });
 }
 
@@ -505,11 +507,13 @@ async function downloadCurrentTab() {
 }
 
 function populateExportPage(data) {
+  if (!data) return;
   const company = data.company || 'Target Company';
   const role = data.targetRole || 'Role';
+  const atsScore = data.atsData?.score ?? 0;
 
   $('coverTargetCompany').textContent = company;
-  $('resumeExportMeta').textContent = `${role} · ${data.template} template · ATS score: ${data.atsData.score}/100`;
+  $('resumeExportMeta').textContent = `${role} · ${data.template || 'modern'} template · ATS score: ${atsScore}/100`;
   $('coverExportMeta').textContent = `Addressed to ${company} · Professional tone`;
 }
 
@@ -569,9 +573,329 @@ function setButtonLoading(btn, loading, text) {
 // Navbar scroll effect
 window.addEventListener('scroll', () => {
   const navbar = $('navbar');
-  if (window.scrollY > 10) {
-    navbar.style.background = 'rgba(5,8,22,0.98)';
-  } else {
-    navbar.style.background = 'rgba(5,8,22,0.85)';
+  if (navbar) {
+    if (window.scrollY > 10) {
+      navbar.style.background = 'rgba(5,8,22,0.98)';
+    } else {
+      navbar.style.background = 'rgba(5,8,22,0.85)';
+    }
   }
 });
+
+// ─── DASHBOARD LOGIC (FULL BACKEND INTEGRATION) ───────────────
+function initDashboard() {
+  $('toggleDashboardBtn').addEventListener('click', toggleDashboard);
+  $('closeDashboardBtn').addEventListener('click', toggleDashboard);
+  $('dashboardOverlay').addEventListener('click', toggleDashboard);
+
+  // Tab switching in Dashboard
+  document.querySelectorAll('.db-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.db-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const category = tab.dataset.tab;
+      document.querySelectorAll('.db-list-section').forEach(sec => sec.classList.remove('active'));
+      $(`db${category.charAt(0).toUpperCase() + category.slice(1)}ListSection`).classList.add('active');
+    });
+  });
+
+  // Save Resume triggers
+  $('saveResumeBtn').addEventListener('click', saveResume);
+  $('saveResumeBtnExport').addEventListener('click', saveResume);
+
+  // Modal controls
+  $('closeScorecardModalBtn').addEventListener('click', closeScorecardModal);
+  $('scorecardModalOverlay').addEventListener('click', closeScorecardModal);
+
+  // Fetch initial dashboard contents
+  fetchDashboardData();
+}
+
+function toggleDashboard() {
+  const sidebar = $('dashboardSidebar');
+  const overlay = $('dashboardOverlay');
+  
+  if (sidebar.classList.contains('active')) {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+  } else {
+    sidebar.classList.add('active');
+    overlay.classList.add('active');
+    fetchDashboardData(); // Refresh on open
+  }
+}
+
+async function saveResume() {
+  if (!AppState.generatedData) {
+    showToast('Please generate a resume first before saving.', 'error');
+    return;
+  }
+
+  showToast('Saving resume to database...', 'info');
+  try {
+    const res = await fetch(`${API_BASE}/api/resumes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(AppState.generatedData)
+    });
+    
+    if (res.ok) {
+      showToast('Resume saved to Dashboard!', 'success');
+      fetchDashboardData(); // Refresh list
+    } else {
+      showToast('Failed to save resume.', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Backend connection error.', 'error');
+  }
+}
+
+async function fetchDashboardData() {
+  try {
+    // 1. Fetch Resumes
+    const resumesRes = await fetch(`${API_BASE}/api/resumes`);
+    if (resumesRes.ok) {
+      const resumes = await resumesRes.json();
+      renderDashboardResumes(resumes);
+    }
+
+    // 2. Fetch Interviews
+    const interviewsRes = await fetch(`${API_BASE}/api/interviews`);
+    if (interviewsRes.ok) {
+      const interviews = await interviewsRes.json();
+      renderDashboardInterviews(interviews);
+    }
+  } catch (err) {
+    console.error('Error fetching dashboard data:', err);
+  }
+}
+
+function renderDashboardResumes(resumes) {
+  const list = $('dbResumesList');
+  if (resumes.length === 0) {
+    list.innerHTML = `<p class="db-empty-msg">No saved resumes found. Create and save one to view here!</p>`;
+    return;
+  }
+
+  list.innerHTML = resumes.map(r => {
+    const dateStr = new Date(r.created_at).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+    return `
+      <div class="db-card" data-id="${r.id}">
+        <div class="db-card-header">
+          <div>
+            <div class="db-card-title">${escapeHTML(r.name)}</div>
+            <div class="db-card-subtitle">${escapeHTML(r.title)}</div>
+          </div>
+          <div class="db-card-badge">Score: ${r.ats_score}/100</div>
+        </div>
+        <div class="db-card-footer">
+          <span class="db-card-date">Saved on ${dateStr}</span>
+          <div class="db-card-actions">
+            <button class="btn-db-action btn-db-load" onclick="loadSavedResume(${r.id})">Load</button>
+            <button class="btn-db-action btn-db-delete" onclick="deleteSavedResume(${r.id})">×</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDashboardInterviews(interviews) {
+  const list = $('dbInterviewsList');
+  if (interviews.length === 0) {
+    list.innerHTML = `<p class="db-empty-msg">No mock interviews completed. Choose a round and practice!</p>`;
+    return;
+  }
+
+  list.innerHTML = interviews.map(i => {
+    const dateStr = new Date(i.created_at).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+    const typeLabel = i.type === 'technical' ? 'Technical' : 'HR';
+    const isHighScore = i.avg_score >= 80 ? 'high-score' : '';
+    return `
+      <div class="db-card" data-id="${i.id}">
+        <div class="db-card-header">
+          <div>
+            <div class="db-card-title">${typeLabel} Round</div>
+            <div class="db-card-subtitle">${escapeHTML(i.role)} @ ${escapeHTML(i.company)}</div>
+          </div>
+          <div class="db-card-badge ${isHighScore}">Avg: ${i.avg_score}/100</div>
+        </div>
+        <div class="db-card-footer">
+          <span class="db-card-date">${dateStr} · ${i.time_spent}</span>
+          <div class="db-card-actions">
+            <button class="btn-db-action btn-db-load" onclick="viewSavedScorecard(${i.id})">Details</button>
+            <button class="btn-db-action btn-db-delete" onclick="deleteSavedInterview(${i.id})">×</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Global actions handlers for window context
+window.loadSavedResume = async function(id) {
+  showToast('Loading resume...', 'info');
+  try {
+    const res = await fetch(`${API_BASE}/api/resumes/${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      
+      // Map flat database columns back to structured Generator output structure
+      const structuredData = {
+        personal: {
+          name: data.name || '',
+          title: data.title || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          location: data.location || '',
+          linkedin: data.linkedin || '',
+          portfolio: data.portfolio || ''
+        },
+        summary: data.summary || '',
+        experiences: data.experiences || [],
+        achievements: data.achievements || [],
+        skills: data.skills || [],
+        education: data.education || [],
+        coverLetter: data.coverLetter || null,
+        atsData: data.atsData || { score: data.ats_score || 70, grade: 'Good', matches: [], missing: [], tips: [] },
+        template: data.template || 'modern',
+        tone: data.tone || 'professional',
+        targetRole: data.target_role || '',
+        company: data.company || '',
+        industry: data.industry || 'tech',
+        expLevel: data.exp_level || 'mid'
+      };
+
+      AppState.generatedData = structuredData;
+      
+      // Prefill step 2 inputs
+      $('fullName').value = structuredData.personal.name;
+      $('jobTitle').value = structuredData.personal.title;
+      $('email').value = structuredData.personal.email;
+      $('phone').value = structuredData.personal.phone;
+      $('location').value = structuredData.personal.location;
+      $('linkedin').value = structuredData.personal.linkedin;
+      $('portfolio').value = structuredData.personal.portfolio;
+      $('targetRole').value = structuredData.targetRole;
+      $('targetCompany').value = structuredData.company;
+      $('industry').value = structuredData.industry; 
+      $('expLevel').value = structuredData.expLevel;
+      $('tone').value = structuredData.tone;
+      $('template').value = structuredData.template;
+      
+      // Load skills
+      AppState.skills = structuredData.skills;
+      renderSkillTags();
+
+      // Render Step 3
+      renderPreview('resume');
+      updateATSScore(structuredData.atsData);
+      populateExportPage(structuredData);
+
+      $('heroSection').style.display = 'none';
+      $('appMain').style.display = 'block';
+      $('startOverBtn').style.display = 'inline-flex';
+      
+      // Close sidebar
+      toggleDashboard();
+      
+      goToStep(3);
+      showToast(`Loaded resume: ${data.name}`, 'success');
+    } else {
+      showToast('Could not load resume data.', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Error loading resume.', 'error');
+  }
+};
+
+window.deleteSavedResume = async function(id) {
+  if (!confirm('Are you sure you want to delete this resume?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/resumes/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Resume deleted.', 'success');
+      fetchDashboardData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+window.viewSavedScorecard = async function(id) {
+  try {
+    const res = await fetch(`${API_BASE}/api/interviews/${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      
+      $('modalScorecardTitle').textContent = `${data.type === 'technical' ? 'Technical' : 'HR'} scorecard - ${data.role}`;
+      $('modalScScore').textContent = `${data.avg_score}/100`;
+      $('modalScTime').textContent = data.time_spent;
+      $('modalScCompletion').textContent = data.completion;
+
+      // Render Accordion
+      const list = $('modalScorecardBreakdownList');
+      list.innerHTML = data.questions_data.map((q, idx) => {
+        const scoreClass = q.score >= 80 ? 'score-high' : q.score >= 50 ? 'score-mid' : 'score-low';
+        return `
+          <div class="sc-item">
+            <div class="sc-item-header" onclick="toggleScorecardBody(this)">
+              <span class="sc-item-title">Q${idx + 1}: ${q.category}</span>
+              <span class="sc-item-score-pill ${scoreClass}">${q.answer === null ? 'SKIPPED' : `Score: ${q.score}/100`}</span>
+            </div>
+            <div class="sc-item-body" style="display: none;">
+              <div class="sc-body-section">
+                <h6>Question</h6>
+                <p>${q.question}</p>
+              </div>
+              <div class="sc-body-section">
+                <h6>Your Answer</h6>
+                <p>${q.answer || '<em>Skipped / No Answer Provided</em>'}</p>
+              </div>
+              ${q.answer !== null ? `
+                <div class="sc-body-section">
+                  <h6>Evaluation & Critique</h6>
+                  <p>${q.critique.replace(/\n/g, '<br/>')}</p>
+                </div>
+              ` : ''}
+              <div class="sc-body-section sc-model-ans">
+                <h6>Suggested Model Answer</h6>
+                <p>${q.modelAnswer}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      $('scorecardModal').style.display = 'block';
+      $('scorecardModalOverlay').style.display = 'block';
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to load scorecard.', 'error');
+  }
+};
+
+window.deleteSavedInterview = async function(id) {
+  if (!confirm('Are you sure you want to delete this scorecard?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/interviews/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Scorecard deleted.', 'success');
+      fetchDashboardData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+function closeScorecardModal() {
+  $('scorecardModal').style.display = 'none';
+  $('scorecardModalOverlay').style.display = 'none';
+}
